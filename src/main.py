@@ -11,15 +11,19 @@ from typing import Annotated
 
 from fastapi import Depends, FastAPI, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
+from fastapi.middleware.cors import CORSMiddleware
+
 from pydantic import BaseModel
 
 app = FastAPI()
 
+
 app.add_middleware(
-    SessionMiddleware,
-    secret_key="super-secret-key",
-    same_site="lax",
-    https_only=False
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
 )
 # =========================
 # HTTP Exception Handler
