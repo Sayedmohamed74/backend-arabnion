@@ -1,5 +1,6 @@
 from fastapi import HTTPException
 from src.utils.errors import raise_error, ErrorKey
+from src.types.models import InvalidOrExpire
 def is_admin(user):
     if "role" in user and user["role"] != "admin":
         raise_error(ErrorKey.UNAUTHORIZED, "Only admin can create teacher accounts")
@@ -20,6 +21,6 @@ def is_student(user):
 
 def is_invalid_or_expired_token(user):
     if "expired" in user:
-        raise HTTPException(status_code=401, detail="Token expired")
+        raise HTTPException(status_code=401, detail=InvalidOrExpire.EXPIRE)
     if "invalid" in user:
-        raise HTTPException(status_code=401, detail="Invalid token")
+        raise HTTPException(status_code=401, detail=InvalidOrExpire.INVALID)

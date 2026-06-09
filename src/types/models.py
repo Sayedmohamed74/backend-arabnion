@@ -1,4 +1,5 @@
-from typing import TypedDict, Optional
+from typing import TypedDict, Optional 
+from enum import Enum
 import datetime
 
 
@@ -43,3 +44,15 @@ class EncodeTokenType(TypedDict):
     name: str
     role: str
     exp: int
+
+class InvalidOrExpire(str, Enum):
+    EXPIRE = "expire"
+    INVALID = 'invalid'
+    
+    
+    
+    
+class UserRole(str, Enum):
+    ADMIN = "admin"
+    TEACHER = 'teacher'
+    STUDENT = 'student'
