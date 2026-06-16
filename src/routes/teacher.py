@@ -3,11 +3,17 @@ from typing import Annotated
 from src.utils.wrap_response import success_response, list_response
 from src.lib.connect_db import db
 from src.repositories.users import RepoTeacher, RepoStudentForTeacher
+from src.repositories.teacher_dialects import RepoTeacherDialect
 from src.services.user import TeacherService, StudentForTeacherService
 from src.lib.jwt import create_access_token, decode_token
 from sqlalchemy import text
 from src.models.request_model import FilterParams, FilterParams, UpdateUserModel
-from src.models.response_model import ResponseModel, ResponseModelList, ResponseUserModel
+from src.models.response_model import (
+    ResponseModel,
+    ResponseModelList,
+    ResponseUserModel,
+    ResponseTeacherModel,
+)
 from src.lib.jwt import decode_token
 from src.utils.check_pass import is_admin, is_invalid_or_expired_token, is_teacher
 from src.utils.errors import raise_error, ErrorKey
@@ -15,7 +21,9 @@ from src.utils.errors import raise_error, ErrorKey
 router = APIRouter()
 
 
-@router.get("/list", tags=["teacher"], response_model=ResponseModelList[ResponseUserModel])
+@router.get(
+    "/list", tags=["teacher"], response_model=ResponseModelList[ResponseUserModel]
+)
 async def list_teachers(
     pagination: Annotated[FilterParams, Query()],
     db=Depends(db),
@@ -27,6 +35,7 @@ async def list_teachers(
     is_admin(user)
     teachers = await services.get_list(role=user.get("role"), pagination=pagination)
     total = await services.get_total(role=user.get("role"))
+    print(teachers)
     return list_response(
         teachers,
         offset=pagination.offset,
@@ -36,14 +45,36 @@ async def list_teachers(
     )
 
 
-@router.get("/me")
+@router.get("/me", response_model=ResponseModel[ResponseTeacherModel])
 async def get_me(db=Depends(db), user=Depends(decode_token)):
     is_invalid_or_expired_token(user)
     is_teacher(user)
+
     repo = RepoTeacher(db)
     service = TeacherService(repo)
     result = await service.get_me(user["id"])
-    return result
+
+    # حفظ المعرف في متغير مستقل
+    teacher_id = result.id
+
+    repoDialect = RepoTeacherDialect(db)
+    dialects_data = await repoDialect.geTeacherDialect(teacher_id)
+    teacher_response = ResponseTeacherModel(
+        id=result.id,
+        name=result.name,
+        email=result.email,
+        country=result.country,
+        tel=result.tel,  
+        create_at=result.create_at,  
+        dialects=dialects_data, 
+    )
+
+    return ResponseModel(
+        status=200,
+        message="Teacher profile retrieved successfully",
+        data=teacher_response,
+        error=False,  
+    )
 
 
 @router.get("/me/students")
@@ -73,7 +104,7 @@ async def get_my_students(
 
 
 @router.get("/{teacher_id}")
-async def get_teacher(teacher_id: int, db=Depends(db), user=Depends(decode_token)):
+async def get_teacher(teacher_id: str, db=Depends(db), user=Depends(decode_token)):
     is_invalid_or_expired_token(user)
     is_admin(user)
     repo = RepoTeacher(db)
@@ -92,10 +123,10 @@ async def get_teacher(teacher_id: int, db=Depends(db), user=Depends(decode_token
     return success_response(data, message="Get teacher details")
 
 
-@router.put("/{teacher_id}",response_model=ResponseModel[ResponseUserModel])
+@router.put("/{teacher_id}", response_model=ResponseModel[ResponseUserModel])
 async def update_teacher(
     body: Annotated[UpdateUserModel, Body()],
-    teacher_id: Annotated[int, Path()],
+    teacher_id: Annotated[str, Path()],
     db=Depends(db),
     user=Depends(decode_token),
 ):
@@ -105,7 +136,6 @@ async def update_teacher(
     repo = RepoTeacher(db)
     service = TeacherService(repo)
     teacher_data = body.model_dump(exclude_unset=True)
-    
 
     updated_teacher = await service.update_teacher(teacher_id, teacher_data)
     updated_teacher.create_at = updated_teacher.create_at.isoformat()
@@ -117,7 +147,7 @@ async def update_teacher(
 
 @router.delete("/{teacher_id}")
 async def delete_teacher(
-    teacher_id: Annotated[int, Path()], db=Depends(db), user=Depends(decode_token)
+    teacher_id: Annotated[str, Path()], db=Depends(db), user=Depends(decode_token)
 ):
     is_invalid_or_expired_token(user)
     is_admin(user)

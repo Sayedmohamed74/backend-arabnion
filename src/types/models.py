@@ -1,17 +1,17 @@
-from typing import TypedDict, Optional 
+from typing import TypedDict, Optional
 from enum import Enum
 import datetime
 
 
 class AdminType(TypedDict):
-    id: Optional[int]
+    id: Optional[str]
     name: str
     email: str
     password: str
 
 
 class StudentType(TypedDict):
-    id: Optional[int]
+    id: Optional[str]
     name: str
     email: str
     password: str
@@ -20,7 +20,7 @@ class StudentType(TypedDict):
 
 
 class TeacherType(TypedDict):
-    id: Optional[int]
+    id: Optional[str]
     name: str
     email: str
     password: str
@@ -29,30 +29,32 @@ class TeacherType(TypedDict):
 
 
 class PackageType(TypedDict):
-    id: Optional[int]
+    id: Optional[str]
     name: str
     lesson: str
     mount_paid: str
     features: list[str]
-    
-    
-    
+
+
+class DialectType(TypedDict):
+    id: Optional[str]
+    name: str
+
 
 class EncodeTokenType(TypedDict):
-    id: int
+    id: str
     email: str
     name: str
     role: str
     exp: int
 
+
 class InvalidOrExpire(str, Enum):
     EXPIRE = "expire"
-    INVALID = 'invalid'
-    
-    
-    
-    
+    INVALID = "invalid"
+
+
 class UserRole(str, Enum):
     ADMIN = "admin"
-    TEACHER = 'teacher'
-    STUDENT = 'student'
+    TEACHER = "teacher"
+    STUDENT = "student"

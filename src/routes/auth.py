@@ -7,6 +7,7 @@ from src.lib.connect_db import db
 from sqlalchemy import text
 from typing import Annotated
 from src.repositories.users import RepoTeacher, RepoStudent, RepoAdmin
+from src.repositories.teacher_dialects import RepoTeacherDialect
 from src.services.user import TeacherService, AdminService, StudentService
 from src.utils.hash import hash_password, verify_password
 from src.utils.errors import raise_error, ErrorKey
@@ -27,6 +28,13 @@ async def register_teacher(
     is_invalid_or_expired_token(user)
     is_admin(user)
     result = await service.create_teacher(body)
+    teacher_id = result.id
+
+    # 3. استدعاء ريبو اللهجات وتمرير المتغيرات بالترتيب الصحيح المتوافق مع تعريف الدالة
+    repoDialect = RepoTeacherDialect(db)
+    await repoDialect.add_dialect_to_teacher(
+        teacher_id=teacher_id, dialect_ids=body.dialect
+    )
 
     return True
 
@@ -45,11 +53,13 @@ async def register_student(
 
 
 @router.post("/login/student")
-async def login_student(request:Request, body: Annotated[LoginRequest, Body()], db=Depends(db)):
+async def login_student(
+    request: Request, body: Annotated[LoginRequest, Body()], db=Depends(db)
+):
     repo = RepoStudent(db)
     service = StudentService(repo)
     ac_token = await service.login_student(body)
-   
+
     return ac_token
 
 
@@ -69,12 +79,11 @@ async def login_admin(body: Annotated[LoginRequest, Body()], db=Depends(db)):
     ac_token = await service.login_admin(body)
     return ac_token
 
+
 @router.get("/refresh-token")
-async def refresh_token(
-    db=Depends(db), user: EncodeTokenType = Depends(decode_token)
-):
+async def refresh_token(db=Depends(db), user: EncodeTokenType = Depends(decode_token)):
     is_invalid_or_expired_token(user)
-    
+
     user.pop("exp", None)
     ac_token = create_access_token(user)
     return success_response(
@@ -83,22 +92,21 @@ async def refresh_token(
         },
         message="Token refreshed successfully",
     )
-    
+
+
 @router.get("/get-user")
-async def get_user(
-    db=Depends(db), user: EncodeTokenType = Depends(decode_token)
-):
+async def get_user(db=Depends(db), user: EncodeTokenType = Depends(decode_token)):
     is_invalid_or_expired_token(user)
     user.pop("exp", None)
-    
+
     return success_response(
         {
             "user": user,
         },
         message="User data retrieved successfully",
-        
     )
-    
+
+
 @router.post("/")
 async def doc_login(
     form_data: Annotated[security.OAuth2PasswordRequestForm, Depends()], db=Depends(db)
@@ -106,6 +114,8 @@ async def doc_login(
     repo = RepoAdmin(db)
     service = AdminService(repo)
     t = LoginRequest(email=form_data.username, password=form_data.password)
+    print(t)
     ac_token = await service.login_admin(t)
+    print(ac_token.data.access_token)
 
-    return {"access_token": ac_token.access_token, "token_type": "bearer"}
+    return {"access_token": ac_token.data.access_token, "token_type": "bearer"}

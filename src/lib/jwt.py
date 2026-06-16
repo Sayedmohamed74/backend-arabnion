@@ -31,6 +31,6 @@ def decode_token(token: Annotated[str, Depends(oauth2_scheme)]):
         payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
         return payload
     except jwt.ExpiredSignatureError:
-        return { "expired": True , "invalid": False }
+        return {"expired": True, "invalid": False}
     except jwt.InvalidTokenError:
-        return { "invalid": True , "expired": False }
+        return {"invalid": True, "expired": False}

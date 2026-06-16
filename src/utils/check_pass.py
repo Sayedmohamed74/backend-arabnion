@@ -1,6 +1,8 @@
 from fastapi import HTTPException
 from src.utils.errors import raise_error, ErrorKey
 from src.types.models import InvalidOrExpire
+
+
 def is_admin(user):
     if "role" in user and user["role"] != "admin":
         raise_error(ErrorKey.UNAUTHORIZED, "Only admin can create teacher accounts")

@@ -1,11 +1,11 @@
-from fastapi import APIRouter, Depends, Body, HTTPException, Query, Path 
+from fastapi import APIRouter, Depends, Body, HTTPException, Query, Path
 from typing import Annotated
 from src.utils.wrap_response import success_response, list_response
 from src.utils.check_pass import is_admin, is_invalid_or_expired_token, is_student
 from src.lib.connect_db import db
 from src.repositories.users import RepoStudent
 from src.services.user import StudentService
-from src.lib.jwt import  decode_token
+from src.lib.jwt import decode_token
 from src.models.request_model import FilterParams, UpdateUserModel
 from src.models.response_model import ResponseModelList, ResponseUserModel
 
@@ -13,7 +13,7 @@ from src.models.response_model import ResponseModelList, ResponseUserModel
 router = APIRouter()
 
 
-@router.get( '/list')
+@router.get("/list")
 async def list_students(
     pagination: Annotated[FilterParams, Query()],
     db=Depends(db),
@@ -43,10 +43,9 @@ async def list_students(
         total=total,
         message="List students",
     )
-    
-    
 
-@router.get('/me')
+
+@router.get("/me")
 async def get_student_me(
     db=Depends(db),
     user=Depends(decode_token),
@@ -61,10 +60,9 @@ async def get_student_me(
     return student
 
 
-
-@router.get('/{student_id}')
+@router.get("/{student_id}")
 async def get_student_by_id(
-    student_id: Annotated[int, Path()],
+    student_id: Annotated[str, Path()],
     db=Depends(db),
     user=Depends(decode_token),
 ):
@@ -78,10 +76,9 @@ async def get_student_by_id(
     return student
 
 
-
-@router.put('/{student_id}')
+@router.put("/{student_id}")
 async def update_student(
-    student_id: Annotated[int, Path()],
+    student_id: Annotated[str, Path()],
     student_data: Annotated[UpdateUserModel, Body()],
     db=Depends(db),
     user=Depends(decode_token),
@@ -91,10 +88,12 @@ async def update_student(
     repo = RepoStudent(db)
     services = StudentService(repo)
     data = student_data.model_dump(exclude_unset=True)
-    updated_student = await services.update_student(student_data=data, student_id=student_id)
+    updated_student = await services.update_student(
+        student_data=data, student_id=student_id
+    )
     if not updated_student:
         raise HTTPException(status_code=404, detail="Student not found")
-    print(updated_student .name)
+    print(updated_student.name)
     return success_response(
         {
             "id": updated_student.id,
@@ -106,11 +105,11 @@ async def update_student(
         },
         message="Student updated successfully",
     )
-    
-    
-@router.delete('/{student_id}')
+
+
+@router.delete("/{student_id}")
 async def delete_student(
-    student_id: Annotated[int, Path()],
+    student_id: Annotated[str, Path()],
     db=Depends(db),
     user=Depends(decode_token),
 ):
