@@ -1,6 +1,6 @@
 from datetime import datetime
-
-from pydantic import BaseModel, Field
+import uuid
+from pydantic import BaseModel, Field, ConfigDict
 from typing import Generic, Optional, TypeVar
 
 
@@ -20,7 +20,7 @@ class ResponseTokenModel(BaseModel):
 
 
 class ResponseUserModel(BaseModel):
-    id: int
+    id: uuid.UUID
     name: str
     email: str
     country: str | None = None
@@ -29,12 +29,26 @@ class ResponseUserModel(BaseModel):
     created_at: datetime = Field(..., validation_alias="create_at")
 
 
+class ResponseStudentModel(ResponseUserModel):
+    package_name: str
+    dialect_name: str
+
+
+class ResponseTeacherModel(ResponseUserModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    dialects: list[ResponseDialectModel]
+
+
+class ResponseDialectModel(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+    id: uuid.UUID
+    name: str
+
 
 class ResponseModelList(BaseModel, Generic[T]):
     status: int
     message: str
     data: list[T] | None = None
     pagination: dict[str, int] | None = None
-    error: bool  = False
-
-
+    error: bool = False

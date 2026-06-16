@@ -2,7 +2,7 @@ from abc import ABC, abstractmethod
 
 from sqlalchemy import func, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
-
+from sqlalchemy.orm import selectinload
 from src.models.model_db import Student, Teacher, Admin
 from typing import Generic, TypeVar
 from src.utils.wrap_response import list_response
@@ -57,15 +57,24 @@ class BaseRepo(RepoDB, RepoUser, Generic[T]):
 
         return result.scalar_one_or_none()
 
-    async def list_users(self, offset=0, limit=10 , search=None, country=None, tel=None):
-        query = select(self.model).offset(offset).limit(limit).order_by(self.model.id)
+    async def list_users(self, offset=0, limit=10, search=None, country=None, tel=None):
+        query = (
+            select(self.model)
+            .offset(offset)
+            .limit(limit)
+            .order_by(self.model.create_at.desc())  # يفضل الترتيب حسب الأحدث
+        )
         if search:
-            query = query.where(self.model.name.contains(search) | self.model.email.contains(search))
+            query = query.where(
+                self.model.name.contains(search) | self.model.email.contains(search)
+            )
         if country:
             query = query.where(self.model.country == country)
         if tel:
             query = query.where(self.model.tel == tel)
+
         result = await self.db.execute(query)
+
         return result.scalars().all()
 
     async def delete_user(self, key):
@@ -105,6 +114,24 @@ class RepoStudent(BaseRepo[Student]):
 
 class RepoTeacher(BaseRepo[Teacher]):
     model = Teacher
+    async def list_users(self, offset=0, limit=10, search=None, country=None, tel=None):
+        query = (
+            select(self.model)
+            .order_by(self.model.create_at.desc())  # يفضل الترتيب حسب الأحدث
+        )
+        if search:
+            query = query.where(
+                self.model.name.contains(search) | self.model.email.contains(search)
+            )
+        if country:
+            query = query.where(self.model.country == country)
+        if tel:
+            query = query.where(self.model.tel == tel)
+
+        result = await self.db.execute(query)
+
+        return result.scalars().all()
+        
 
 
 class RepoAdmin(BaseRepo[Admin]):

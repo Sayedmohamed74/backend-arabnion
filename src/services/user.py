@@ -15,7 +15,7 @@ from src.models.request_model import (
     TeacherCreate,
     FilterParams,
 )
-from src.models.response_model import ResponseTokenModel , ResponseModel
+from src.models.response_model import ResponseTokenModel, ResponseModel
 from src.utils.hash import hash_password, verify_password
 from src.lib.jwt import create_access_token, create_refresh_token
 from src.utils.errors import raise_error, ErrorKey
@@ -35,7 +35,7 @@ class StudentService:
 
         ac_token = create_access_token(
             {
-                "id": user.id,
+                "id": str(user.id),
                 "email": user.email,
                 "name": user.name,
                 "country": user.country,
@@ -45,7 +45,7 @@ class StudentService:
         )
         re_token = create_refresh_token(
             {
-                "id": user.id,
+                "id": str(user.id),
                 "email": user.email,
                 "name": user.name,
                 "country": user.country,
@@ -53,24 +53,27 @@ class StudentService:
                 "role": "student",
             }
         )
-        return ResponseModel(status=200, message="Login successful", data=ResponseTokenModel(access_token=ac_token, refresh_token=re_token))
+        return ResponseModel(
+            status=200,
+            message="Login successful",
+            data=ResponseTokenModel(access_token=ac_token, refresh_token=re_token),
+        )
 
     async def create_student(self, student_data: StudentCreate):
 
-        student = await self.repo.get_user_by_email(student_data.email)
+        try:
+            student = await self.repo.get_user_by_email(student_data.email)
 
-        if student:
-            raise HTTPException(status_code=400, detail="Email already exists")
+            if student:
+                raise HTTPException(status_code=400, detail="Email already exists")
 
-        hash_pass = hash_password(student_data.password)
-        data: TeacherType = {
-            "country": student_data.country,
-            "email": student_data.email,
-            "name": student_data.name,
-            "password": hash_pass,
-            "tel": student_data.phone,
-        }
-        return await self.repo.create_user(data)
+            hash_pass = hash_password(student_data.password)
+            data = student_data.model_dump()
+            data["password"] = hash_pass
+            print("]]]]]]", data)
+            return await self.repo.create_user(data)
+        except Exception as e:
+            raise HTTPException(500, "errors in fileds")
 
     async def update_student(self, student_id: int, student_data: dict):
 
@@ -89,11 +92,18 @@ class StudentService:
             raise HTTPException(status_code=404, detail="Student not found")
 
         return await self.repo.delete_user(student_id)
+
     async def get_list(self, role: str, pagination: FilterParams):
         if not role == "admin":
             raise_error(ErrorKey.FORBIDDEN)
-        return await self.repo.list_users(pagination.offset, pagination.limit ,search=pagination.search, country=pagination.country, tel=pagination.tel)
-    
+        return await self.repo.list_users(
+            pagination.offset,
+            pagination.limit,
+            search=pagination.search,
+            country=pagination.country,
+            tel=pagination.tel,
+        )
+
     async def get_total(self, role: str):
         if role != "admin":
             raise_error(ErrorKey.FORBIDDEN)
@@ -103,12 +113,11 @@ class StudentService:
         result = await self.repo.db.execute(stmt)
         return result.scalar()
 
-    
     async def get_me(self, id: int):
 
         user = await self.repo.get_user(id)
         data = {
-            "id": user.id,
+            "id": str(user.id),
             "name": user.name,
             "email": user.email,
             "country": user.country,
@@ -116,7 +125,6 @@ class StudentService:
             "created_at": user.create_at.isoformat(),
         }
         return success_response(data)
-
 
 
 class TeacherService:
@@ -132,7 +140,7 @@ class TeacherService:
 
         ac_token = create_access_token(
             {
-                "id": user.id,
+                "id": str(user.id),
                 "email": user.email,
                 "name": user.name,
                 "country": user.country,
@@ -142,7 +150,7 @@ class TeacherService:
         )
         re_token = create_refresh_token(
             {
-                "id": user.id,
+                "id": str(user.id),
                 "email": user.email,
                 "name": user.name,
                 "country": user.country,
@@ -150,7 +158,11 @@ class TeacherService:
                 "role": "teacher",
             }
         )
-        return ResponseModel(status=200, message="Login successful", data=ResponseTokenModel(access_token=ac_token, refresh_token=re_token))
+        return ResponseModel(
+            status=200,
+            message="Login successful",
+            data=ResponseTokenModel(access_token=ac_token, refresh_token=re_token),
+        )
 
     async def create_teacher(self, teacher_data: TeacherCreate):
 
@@ -189,20 +201,19 @@ class TeacherService:
     async def get_list(self, role: str, pagination: FilterParams):
         if not role == "admin":
             raise_error(ErrorKey.FORBIDDEN)
-        return await self.repo.list_users(pagination.offset, pagination.limit , search=pagination.search, country=pagination.country, tel=pagination.tel)
+        return await self.repo.list_users(
+            pagination.offset,
+            pagination.limit,
+            search=pagination.search,
+            country=pagination.country,
+            tel=pagination.tel,
+        )
 
-    async def get_me(self, id: int):
+    async def get_me(self, id: str):
 
         user = await self.repo.get_user(id)
-        data = {
-            "id": user.id,
-            "name": user.name,
-            "email": user.email,
-            "country": user.country,
-            "telephone": user.tel,
-            "created_at": user.create_at.isoformat(),
-        }
-        return success_response(data)
+
+        return user
 
     async def remove_me(self, id: int, role):
         if not role == "teacher":
@@ -225,7 +236,7 @@ class AdminService:
     def __init__(self, repo: RepoAdmin):
         self.repo = repo
 
-    async def login_admin(self, admin: LoginRequest) -> ResponseTokenModel:
+    async def login_admin(self, admin: LoginRequest):
         user = await self.repo.get_user_by_email(admin.email)
         if not user:
             raise HTTPException(status_code=403, detail="UnAuth")
@@ -233,12 +244,26 @@ class AdminService:
             raise HTTPException(status_code=403, detail="UnAuth")
 
         ac_token = create_access_token(
-            {"id": user.id, "email": user.email, "name": user.name, "role": "admin"}
+            {
+                "id": str(user.id),
+                "email": user.email,
+                "name": user.name,
+                "role": "admin",
+            }
         )
         re_token = create_refresh_token(
-            {"id": user.id, "email": user.email, "name": user.name, "role": "admin"}
+            {
+                "id": str(user.id),
+                "email": user.email,
+                "name": user.name,
+                "role": "admin",
+            }
         )
-        return ResponseModel(status=200, message="Login successful", data=ResponseTokenModel(access_token=ac_token, refresh_token=re_token))
+        return ResponseModel(
+            status=200,
+            message="Login successful",
+            data=ResponseTokenModel(access_token=ac_token, refresh_token=re_token),
+        )
 
     async def create_admin(self, admin_data: dict):
 
