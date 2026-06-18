@@ -33,11 +33,11 @@ class ResponseStudentModel(ResponseUserModel):
     package_name: str
     dialect_name: str
 
-
 class ResponseDialectModel(BaseModel):
     model_config = ConfigDict(from_attributes=True)
     id: uuid.UUID
     name: str
+
 
 
 class ResponseTeacherModel(ResponseUserModel):
