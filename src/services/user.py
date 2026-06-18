@@ -15,7 +15,11 @@ from src.models.request_model import (
     TeacherCreate,
     FilterParams,
 )
-from src.models.response_model import ResponseTokenModel, ResponseModel
+from src.models.response_model import (
+    ResponseTokenModel,
+    ResponseModel,
+    ResponseTeacherModel,
+)
 from src.utils.hash import hash_password, verify_password
 from src.lib.jwt import create_access_token, create_refresh_token
 from src.utils.errors import raise_error, ErrorKey
@@ -29,9 +33,9 @@ class StudentService:
     async def login_student(self, student: LoginRequest) -> ResponseTokenModel:
         user = await self.repo.get_user_by_email(student.email)
         if not user:
-            raise HTTPException(status_code=403, detail="UnAuth")
+            raise HTTPException(status_code=403, detail="The data is wrong")
         if not verify_password(student.password, user.password):
-            raise HTTPException(status_code=403, detail="UnAuth")
+            raise HTTPException(status_code=403, detail="The data is wrong")
 
         ac_token = create_access_token(
             {
@@ -70,7 +74,6 @@ class StudentService:
             hash_pass = hash_password(student_data.password)
             data = student_data.model_dump()
             data["password"] = hash_pass
-            print("]]]]]]", data)
             return await self.repo.create_user(data)
         except Exception as e:
             raise HTTPException(500, "errors in fileds")
@@ -113,16 +116,104 @@ class StudentService:
         result = await self.repo.db.execute(stmt)
         return result.scalar()
 
-    async def get_me(self, id: int):
-
+    async def get_id(self, id: int):
         user = await self.repo.get_user(id)
+        if not user:
+            raise HTTPException(status_code=404, detail="Student not found")
+
+        package = None
+        if getattr(user, "package", None):
+            p = user.package
+            package = {
+                "id":p.id,
+                "name": p.name,
+                "lesson": p.lesson,
+                "monthly_payment": p.mount_paid,
+                "features": p.features,
+            }
+
+        dialect = None
+        if getattr(user, "dialect", None) and user.dialect:
+            d = user.dialect
+            dialect = {"id":d.id,"name": d.name}
+
+        teacher = None
+        if getattr(user, "teacher", None) and user.teacher:
+            t = user.teacher
+            teacher = {"id":t.id, "name": t.name}
+
+        country_info = None
+        if getattr(user, "countries", None) and user.countries:
+            c = user.countries
+            country_info = {
+                "country_name": c.country_name,
+                "country_code": c.country_code,
+                "phone_code": c.phone_code,
+                
+            }
+
         data = {
             "id": str(user.id),
             "name": user.name,
             "email": user.email,
             "country": user.country,
             "telephone": user.tel,
-            "created_at": user.create_at.isoformat(),
+            "created_at": user.create_at.isoformat() if user.create_at else None,
+            "package": package,
+            "dialect": dialect,
+            "teacher": teacher,
+            "country_info": country_info,
+            "rating": user.rating,
+            "group_whatsapp": user.group_whatsapp,
+        }
+        return success_response(data)
+    async def get_me(self, id: int):
+        user = await self.repo.get_user(id)
+        if not user:
+            raise HTTPException(status_code=404, detail="Student not found")
+
+        package = None
+        if getattr(user, "package", None):
+            p = user.package
+            package = {
+                "name": p.name,
+                "lesson": p.lesson,
+                "monthly_payment": p.mount_paid,
+                "features": p.features,
+            }
+
+        dialect = None
+        if getattr(user, "dialect", None) and user.dialect:
+            d = user.dialect
+            dialect = {"name": d.name}
+
+        teacher = None
+        if getattr(user, "teacher", None) and user.teacher:
+            t = user.teacher
+            teacher = { "name": t.name}
+
+        country_info = None
+        if getattr(user, "countries", None) and user.countries:
+            c = user.countries
+            country_info = {
+                "country_name": c.country_name,
+                "country_code": c.country_code,
+                "phone_code": c.phone_code,
+                
+            }
+
+        data = {
+            "id": str(user.id),
+            "name": user.name,
+            "email": user.email,
+            "country": user.country,
+            "telephone": user.tel,
+            "created_at": user.create_at.isoformat() if user.create_at else None,
+            "package": package,
+            "dialect": dialect,
+            "teacher": teacher,
+            "country_info": country_info,
+            "group_whatsapp": user.group_whatsapp,
         }
         return success_response(data)
 
@@ -134,9 +225,9 @@ class TeacherService:
     async def login_teacher(self, teacher: LoginRequest) -> ResponseTokenModel:
         user = await self.repo.get_user_by_email(teacher.email)
         if not user:
-            raise HTTPException(status_code=403, detail="UnAuth")
+            raise HTTPException(status_code=403, detail="The data is wrong")
         if not verify_password(teacher.password, user.password):
-            raise HTTPException(status_code=403, detail="UnAuth")
+            raise HTTPException(status_code=403, detail="The data is wrong")
 
         ac_token = create_access_token(
             {
@@ -207,13 +298,23 @@ class TeacherService:
             search=pagination.search,
             country=pagination.country,
             tel=pagination.tel,
+            dialect=pagination.dialect
         )
 
     async def get_me(self, id: str):
-
         user = await self.repo.get_user(id)
-
-        return user
+        if not user:
+            raise HTTPException(status_code=404, detail="Teacher not found")
+        teacher = ResponseTeacherModel.model_validate(
+            {
+                **user.__dict__,
+                "dialects": user.dialect,
+                "country":user.countries.country_name
+                
+            }
+        )
+       
+        return success_response(data=teacher)
 
     async def remove_me(self, id: int, role):
         if not role == "teacher":
@@ -239,9 +340,9 @@ class AdminService:
     async def login_admin(self, admin: LoginRequest):
         user = await self.repo.get_user_by_email(admin.email)
         if not user:
-            raise HTTPException(status_code=403, detail="UnAuth")
+            raise HTTPException(status_code=403, detail="The data is wrong")
         if not verify_password(admin.password, user.password):
-            raise HTTPException(status_code=403, detail="UnAuth")
+            raise HTTPException(status_code=403, detail="The data is wrong")
 
         ac_token = create_access_token(
             {

@@ -7,7 +7,7 @@ from src.repositories.teacher_dialects import RepoTeacherDialect
 from src.services.user import TeacherService, StudentForTeacherService
 from src.lib.jwt import create_access_token, decode_token
 from sqlalchemy import text
-from src.models.request_model import FilterParams, FilterParams, UpdateUserModel
+from src.models.request_model import FilterParams, FilterParams, UpdateUserModel,FilterTeacherParams
 from src.models.response_model import (
     ResponseModel,
     ResponseModelList,
@@ -25,7 +25,7 @@ router = APIRouter()
     "/list", tags=["teacher"], response_model=ResponseModelList[ResponseUserModel]
 )
 async def list_teachers(
-    pagination: Annotated[FilterParams, Query()],
+    pagination: Annotated[FilterTeacherParams, Query()],
     db=Depends(db),
     user=Depends(decode_token),
 ):
@@ -35,7 +35,6 @@ async def list_teachers(
     is_admin(user)
     teachers = await services.get_list(role=user.get("role"), pagination=pagination)
     total = await services.get_total(role=user.get("role"))
-    print(teachers)
     return list_response(
         teachers,
         offset=pagination.offset,
@@ -54,27 +53,7 @@ async def get_me(db=Depends(db), user=Depends(decode_token)):
     service = TeacherService(repo)
     result = await service.get_me(user["id"])
 
-    # حفظ المعرف في متغير مستقل
-    teacher_id = result.id
-
-    repoDialect = RepoTeacherDialect(db)
-    dialects_data = await repoDialect.geTeacherDialect(teacher_id)
-    teacher_response = ResponseTeacherModel(
-        id=result.id,
-        name=result.name,
-        email=result.email,
-        country=result.country,
-        tel=result.tel,  
-        create_at=result.create_at,  
-        dialects=dialects_data, 
-    )
-
-    return ResponseModel(
-        status=200,
-        message="Teacher profile retrieved successfully",
-        data=teacher_response,
-        error=False,  
-    )
+    return result
 
 
 @router.get("/me/students")
@@ -103,24 +82,17 @@ async def get_my_students(
 #     return result
 
 
-@router.get("/{teacher_id}")
+@router.get("/{teacher_id}", response_model=ResponseModel[ResponseTeacherModel])
 async def get_teacher(teacher_id: str, db=Depends(db), user=Depends(decode_token)):
     is_invalid_or_expired_token(user)
     is_admin(user)
     repo = RepoTeacher(db)
     service = TeacherService(repo)
-    teacher = await service.repo.get_user(teacher_id)
+    teacher = await service.get_me(teacher_id)
     if not teacher:
         raise_error(ErrorKey.NOT_FOUND, "Teacher not found")
-    data = {
-        "id": teacher.id,
-        "name": teacher.name,
-        "email": teacher.email,
-        "country": teacher.country,
-        "telephone": teacher.tel,
-        "created_at": teacher.create_at.isoformat(),
-    }
-    return success_response(data, message="Get teacher details")
+
+    return teacher
 
 
 @router.put("/{teacher_id}", response_model=ResponseModel[ResponseUserModel])

@@ -14,7 +14,13 @@ def is_teacher(user):
         raise_error(ErrorKey.UNAUTHORIZED, "Only teachers can access it")
     return True
 
-
+def is_Admin_teacher(user):
+    if user.get("role") not in ("admin", "teacher"):
+        raise_error(
+            ErrorKey.UNAUTHORIZED,
+            "Only admin or teacher can access this resource"
+        )
+    return True
 def is_student(user):
     if "role" in user and user["role"] != "student":
         raise_error(ErrorKey.UNAUTHORIZED, "Only students can access it")

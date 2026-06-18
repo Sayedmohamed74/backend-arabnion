@@ -1,5 +1,5 @@
 from fastapi import FastAPI, Request
-from src.routes import auth, teacher, student, package, dialects
+from src.routes import auth, teacher, student, package, dialects,teacher_dialect
 from fastapi.responses import JSONResponse
 from src.utils.wrap_response import success_response
 
@@ -102,3 +102,4 @@ app.include_router(teacher.router, prefix="/teacher", tags=["teacher"])
 app.include_router(student.router, prefix="/student", tags=["student"])
 app.include_router(package.router, prefix="/package", tags=["package"])
 app.include_router(dialects.router, prefix="/dialects", tags=["dialects"])
+app.include_router(teacher_dialect.router, prefix="/teacher-dialect", tags=["teacher-dialect"])

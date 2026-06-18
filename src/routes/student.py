@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Depends, Body, HTTPException, Query, Path
 from typing import Annotated
 from src.utils.wrap_response import success_response, list_response
-from src.utils.check_pass import is_admin, is_invalid_or_expired_token, is_student
+from src.utils.check_pass import is_admin, is_invalid_or_expired_token, is_student,is_Admin_teacher
 from src.lib.connect_db import db
 from src.repositories.users import RepoStudent
 from src.services.user import StudentService
@@ -30,7 +30,7 @@ async def list_students(
             "id": student.id,
             "name": student.name,
             "email": student.email,
-            "country": student.country,
+            "country": student.countries.country_name,
             "telephone": student.tel,
             "created_at": student.create_at.isoformat(),
         }
@@ -67,10 +67,10 @@ async def get_student_by_id(
     user=Depends(decode_token),
 ):
     is_invalid_or_expired_token(user)
-    is_admin(user)
+    is_Admin_teacher(user)
     repo = RepoStudent(db)
     services = StudentService(repo)
-    student = await services.get_me(id=student_id)
+    student = await services.get_id(id=student_id)
     if not student:
         raise HTTPException(status_code=404, detail="Student not found")
     return student
@@ -93,7 +93,6 @@ async def update_student(
     )
     if not updated_student:
         raise HTTPException(status_code=404, detail="Student not found")
-    print(updated_student.name)
     return success_response(
         {
             "id": updated_student.id,

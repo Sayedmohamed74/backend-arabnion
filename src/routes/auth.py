@@ -19,14 +19,14 @@ from src.types.models import EncodeTokenType
 router = APIRouter()
 
 
-@router.post("/register/teacher")
+@router.post("/register/teacher", response_model=ResponseModel)
 async def register_teacher(
     body: Annotated[TeacherCreate, Body()], db=Depends(db), user=Depends(decode_token)
 ):
-    repo = RepoTeacher(db)
-    service = TeacherService(repo)
     is_invalid_or_expired_token(user)
     is_admin(user)
+    repo = RepoTeacher(db)
+    service = TeacherService(repo)
     result = await service.create_teacher(body)
     teacher_id = result.id
 
@@ -36,20 +36,20 @@ async def register_teacher(
         teacher_id=teacher_id, dialect_ids=body.dialect
     )
 
-    return True
+    return success_response(data={}, message="The teacher has been added", status=201)
 
 
-@router.post("/register/student")
+@router.post("/register/student", response_model=ResponseModel)
 async def register_student(
     body: Annotated[StudentCreate, Body()], db=Depends(db), user=Depends(decode_token)
 ):
-    repo = RepoStudent(db)
-    service = StudentService(repo)
     is_invalid_or_expired_token(user)
     is_admin(user)
+    repo = RepoStudent(db)
+    service = StudentService(repo)
     result = await service.create_student(body)
 
-    return True
+    return success_response(data={}, message="The student has been added", status=201)
 
 
 @router.post("/login/student")
@@ -114,8 +114,6 @@ async def doc_login(
     repo = RepoAdmin(db)
     service = AdminService(repo)
     t = LoginRequest(email=form_data.username, password=form_data.password)
-    print(t)
     ac_token = await service.login_admin(t)
-    print(ac_token.data.access_token)
 
     return {"access_token": ac_token.data.access_token, "token_type": "bearer"}

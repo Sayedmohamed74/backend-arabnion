@@ -34,16 +34,17 @@ class ResponseStudentModel(ResponseUserModel):
     dialect_name: str
 
 
-class ResponseTeacherModel(ResponseUserModel):
-    model_config = ConfigDict(from_attributes=True)
-
-    dialects: list[ResponseDialectModel]
-
-
 class ResponseDialectModel(BaseModel):
     model_config = ConfigDict(from_attributes=True)
     id: uuid.UUID
     name: str
+
+
+class ResponseTeacherModel(ResponseUserModel):
+    model_config = ConfigDict(from_attributes=True)
+    rating:str | None
+
+    dialects: list[ResponseDialectModel] | None
 
 
 class ResponseModelList(BaseModel, Generic[T]):
@@ -52,3 +53,8 @@ class ResponseModelList(BaseModel, Generic[T]):
     data: list[T] | None = None
     pagination: dict[str, int] | None = None
     error: bool = False
+
+
+class ResponseTeacherDialectModel(BaseModel):
+    id:str
+    name:str

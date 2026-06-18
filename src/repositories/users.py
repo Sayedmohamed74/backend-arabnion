@@ -3,7 +3,7 @@ from abc import ABC, abstractmethod
 from sqlalchemy import func, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
-from src.models.model_db import Student, Teacher, Admin
+from src.models.model_db import Student, Teacher, Admin ,Dialects
 from typing import Generic, TypeVar
 from src.utils.wrap_response import list_response
 from src.models.response_model import ResponseModelList, ResponseUserModel
@@ -111,12 +111,24 @@ class BaseRepo(RepoDB, RepoUser, Generic[T]):
 class RepoStudent(BaseRepo[Student]):
     model = Student
 
+    async def get_user(self, key):
+        result = await self.db.execute(
+            select(Student)
+            .options(
+                selectinload(Student.teacher),
+                selectinload(Student.package),
+                selectinload(Student.dialect),
+                selectinload(Student.countries),
+            )
+            .where(Student.id == key)
+        )
 
-class RepoTeacher(BaseRepo[Teacher]):
-    model = Teacher
+        return result.scalar_one_or_none()
     async def list_users(self, offset=0, limit=10, search=None, country=None, tel=None):
         query = (
-            select(self.model)
+            select(self.model).options(selectinload(Student.countries))
+            .offset(offset)
+            .limit(limit)
             .order_by(self.model.create_at.desc())  # يفضل الترتيب حسب الأحدث
         )
         if search:
@@ -131,7 +143,50 @@ class RepoTeacher(BaseRepo[Teacher]):
         result = await self.db.execute(query)
 
         return result.scalars().all()
-        
+
+
+class RepoTeacher(BaseRepo[Teacher]):
+    model = Teacher
+
+    async def list_users(self, offset=0, limit=10, search=None, country=None, tel=None, dialect=None):
+        query = (
+        select(Teacher)
+        .options(selectinload(Teacher.dialect))
+        .order_by(Teacher.create_at.desc())
+    )
+        if search:
+            query = query.where(
+                Teacher.name.contains(search) |
+                Teacher.email.contains(search)
+            )
+    
+        if country:
+            query = query.where(Teacher.country == country)
+    
+        if tel:
+            query = query.where(Teacher.tel == tel)
+    
+        if dialect:
+            query = query.where(
+            Teacher.dialect.any(Dialects.id.in_(dialect))
+            )
+    
+        result = await self.db.execute(query)
+    
+        return result.scalars().all()
+
+    async def get_user(self, key):
+        result = await self.db.execute(
+            select(Teacher)
+            .options(
+                selectinload(Teacher.dialect),
+                selectinload(Teacher.countries),
+                
+            )
+            .where(Teacher.id == key)
+        )
+
+        return result.scalar_one_or_none()
 
 
 class RepoAdmin(BaseRepo[Admin]):

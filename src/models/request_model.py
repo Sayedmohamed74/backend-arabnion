@@ -81,14 +81,16 @@ class FilterParams(BaseModel):
         validation_alias="telephone",
         description="Filter by telephone number",
     )
+    
 
     @field_validator("tel")
     def validate_phone(cls, v):
         if v is not None:
             return validate_phone_value(cls, v)
         return v
-
-
+class FilterTeacherParams(FilterParams):
+    
+    dialect : Optional[list[str]] =Field(default=None, description="Filter by dialect")
 # class FilterParams(BaseModel):
 #     pass
 
@@ -103,3 +105,6 @@ class UpdateUserModel(BaseModel):
         if v is not None:
             return validate_phone_value(cls, v)
         return v
+class TeacherDialectModel(BaseModel):
+    dialect_id:list[uuid.UUID]
+    teacher_id:uuid.UUID

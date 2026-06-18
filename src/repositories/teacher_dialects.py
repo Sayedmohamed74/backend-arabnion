@@ -1,4 +1,4 @@
-from sqlalchemy import select, insert, delete
+from sqlalchemy import select, insert, delete,exists
 import uuid
 from src.models.model_db import Teacher, Dialects, TeacherDialect
 from src.repositories.db import RepoDB
@@ -37,7 +37,6 @@ class RepoTeacherDialect(RepoDB):
         )
 
         result = await self.db.execute(stmt)
-        print(result)
         return result.scalars().all()
 
     async def get_dialects_teachers(self, dialect_id: str):
@@ -52,10 +51,12 @@ class RepoTeacherDialect(RepoDB):
         return result.scalars().all()
 
     async def teacher_has_dialect(self, teacher_id: str, dialect_id: str) -> bool:
-        """Check if a teacher has a specific dialect"""
-        stmt = select(TeacherDialect).where(
-            (TeacherDialect.teacher_id == teacher_id)
-            & (TeacherDialect.dialect_id == dialect_id)
+        stmt = select(
+            exists().where(
+                TeacherDialect.teacher_id == teacher_id,
+                TeacherDialect.dialect_id == dialect_id
+            )
         )
-        result = await self.db.execute(stmt)
-        return result.first() is not None
+    
+        result = await self.db.scalar(stmt)
+        return result

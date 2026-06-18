@@ -1,5 +1,5 @@
 from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession
-from sqlalchemy.orm import sessionmaker
+from sqlalchemy.ext.asyncio import async_sessionmaker
 import os
 from dotenv import load_dotenv
 
@@ -7,14 +7,21 @@ load_dotenv()
 
 URL_DB = os.environ.get("DB")
 
+engine = create_async_engine(
+    URL_DB,
+    echo=True,
+    pool_size=10,
+    max_overflow=20,
+    pool_pre_ping=True,
+)
 
-engine = create_async_engine(URL_DB, echo=True)
-
-creat_session = sessionmaker(
-    bind=engine, autoflush=False, autocommit=False, class_=AsyncSession
+SessionLocal = async_sessionmaker(
+    engine,
+    autoflush=False,
+    expire_on_commit=False,
 )
 
 
 async def db():
-    async with creat_session() as session:
+    async with SessionLocal() as session:
         yield session
