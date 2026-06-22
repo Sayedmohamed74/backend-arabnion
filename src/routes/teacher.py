@@ -127,4 +127,6 @@ async def delete_teacher(
     repo = RepoTeacher(db)
     service = TeacherService(repo)
     result = await service.delete_teacher(teacher_id, role=user["role"])
-    return result
+    if not result:
+        raise HTTPException(status_code=404, detail="Teacher not found")
+    return success_response({}, message="Student deleted successfully")

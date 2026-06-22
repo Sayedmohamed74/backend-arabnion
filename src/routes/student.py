@@ -119,6 +119,7 @@ async def delete_student(
     is_admin(user)
     repo = RepoStudent(db)
     services = StudentService(repo)
+    print(student_id)
     result = await services.delete_student(student_id=student_id)
     if not result:
         raise HTTPException(status_code=404, detail="Student not found")

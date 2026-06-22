@@ -79,6 +79,7 @@ class BaseRepo(RepoDB, RepoUser, Generic[T]):
 
     async def delete_user(self, key):
         user = await self.get_user(key)
+        print('========',user.__dict__)
 
         if not user:
             return None
