@@ -89,6 +89,7 @@ class BaseRepo(RepoDB, RepoUser, Generic[T]):
         return user
 
     async def update_user(self, key, data):
+        print('=================',data)
         await self.db.execute(
             update(self.model).where(self.model.id == key).values(**data)
         )

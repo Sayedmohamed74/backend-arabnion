@@ -6,7 +6,7 @@ from src.lib.connect_db import db
 from src.repositories.users import RepoStudent
 from src.services.user import StudentService
 from src.lib.jwt import decode_token
-from src.models.request_model import FilterParams, UpdateUserModel
+from src.models.request_model import FilterParams, StudentUpdata
 from src.models.response_model import ResponseModelList, ResponseUserModel
 
 
@@ -79,7 +79,7 @@ async def get_student_by_id(
 @router.put("/{student_id}")
 async def update_student(
     student_id: Annotated[str, Path()],
-    student_data: Annotated[UpdateUserModel, Body()],
+    student_data: Annotated[StudentUpdata, Body()],
     db=Depends(db),
     user=Depends(decode_token),
 ):
@@ -87,7 +87,10 @@ async def update_student(
     is_admin(user)
     repo = RepoStudent(db)
     services = StudentService(repo)
+    print('=======before============',student_data.model_dump())
     data = student_data.model_dump(exclude_unset=True)
+    print('=======after============',data)
+    
     updated_student = await services.update_student(
         student_data=data, student_id=student_id
     )

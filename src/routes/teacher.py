@@ -7,7 +7,7 @@ from src.repositories.teacher_dialects import RepoTeacherDialect
 from src.services.user import TeacherService, StudentForTeacherService
 from src.lib.jwt import create_access_token, decode_token
 from sqlalchemy import text
-from src.models.request_model import FilterParams, FilterParams, UpdateUserModel,FilterTeacherParams
+from src.models.request_model import FilterParams, FilterParams, UpdateUserModel,FilterTeacherParams ,TeacherUpdate
 from src.models.response_model import (
     ResponseModel,
     ResponseModelList,
@@ -97,7 +97,7 @@ async def get_teacher(teacher_id: str, db=Depends(db), user=Depends(decode_token
 
 @router.put("/{teacher_id}", response_model=ResponseModel[ResponseUserModel])
 async def update_teacher(
-    body: Annotated[UpdateUserModel, Body()],
+    body: Annotated[TeacherUpdate, Body()],
     teacher_id: Annotated[str, Path()],
     db=Depends(db),
     user=Depends(decode_token),
@@ -107,6 +107,7 @@ async def update_teacher(
 
     repo = RepoTeacher(db)
     service = TeacherService(repo)
+    print('========',body)
     teacher_data = body.model_dump(exclude_unset=True)
 
     updated_teacher = await service.update_teacher(teacher_id, teacher_data)

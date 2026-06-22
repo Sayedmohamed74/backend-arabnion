@@ -15,6 +15,16 @@ class LoginRequest(BaseModel):
     email: EmailStr
     password: str
 
+class UpdateUserModel(BaseModel):
+    name: Optional[str] = None
+    country: Optional[str] = None
+    tel: Optional[str] = Field(default=None, validation_alias="phone")
+
+    @field_validator("tel")
+    def validate_phone(cls, v):
+        if v is not None:
+            return validate_phone_value(cls, v)
+        return v
 
 # ---------------- ADMIN ----------------
 class AdminCreate(BaseModel):
@@ -40,6 +50,21 @@ class StudentCreate(BaseModel):
     def validate_phone(cls, v):
         return validate_phone_value(cls, v)
 
+class StudentUpdata(BaseModel):
+    name: str
+    email: EmailStr
+    country: str
+    tel: str = Field(..., validation_alias="phone")
+    teacher_id: str = Field(..., validation_alias="teacherId")
+    dialect_id: str = Field(..., validation_alias="dialectId")
+    package_id: str = Field(..., validation_alias="packageId")
+    rating: str = Field(..., validation_alias="rating")
+    group_whatsapp: str = Field(..., validation_alias="linkGroup")
+
+    @field_validator("tel")
+    def validate_phone(cls, v):
+        return validate_phone_value(cls, v)
+
 
 # ---------------- TEACHER ----------------
 class TeacherCreate(BaseModel):
@@ -52,6 +77,17 @@ class TeacherCreate(BaseModel):
     rating: str
 
     @field_validator("phone")
+    def validate_phone(cls, v):
+        return validate_phone_value(cls, v)
+
+class TeacherUpdate(BaseModel):
+    name: str
+    email: EmailStr
+    country: str
+    tel: str = Field(..., validation_alias="phone")
+    rating: str
+
+    @field_validator("tel")
     def validate_phone(cls, v):
         return validate_phone_value(cls, v)
 
@@ -95,16 +131,6 @@ class FilterTeacherParams(FilterParams):
 #     pass
 
 
-class UpdateUserModel(BaseModel):
-    name: Optional[str] = None
-    country: Optional[str] = None
-    tel: Optional[str] = Field(default=None, validation_alias="telephone")
-
-    @field_validator("tel")
-    def validate_phone(cls, v):
-        if v is not None:
-            return validate_phone_value(cls, v)
-        return v
 class TeacherDialectModel(BaseModel):
     dialect_id:list[uuid.UUID]
     teacher_id:uuid.UUID

@@ -64,19 +64,19 @@ class StudentService:
         )
 
     async def create_student(self, student_data: StudentCreate):
-
-        try:
-            student = await self.repo.get_user_by_email(student_data.email)
-
-            if student:
-                raise HTTPException(status_code=400, detail="Email already exists")
-
-            hash_pass = hash_password(student_data.password)
-            data = student_data.model_dump()
-            data["password"] = hash_pass
-            return await self.repo.create_user(data)
-        except Exception as e:
-            raise HTTPException(500, "errors in fileds")
+        print(student_data.password)
+        student = await self.repo.get_user_by_email(student_data.email)
+        if student:
+            raise HTTPException(status_code=400, detail="Email already exists")
+        print('=student_data.password=student_data.password',student_data.password)
+        hash_pass = hash_password(student_data.password)
+        print('======================1====')
+        data = student_data.model_dump()
+        print('======================2====')
+        data["password"] = hash_pass
+        print('======================3====')
+        return await self.repo.create_user(data)
+        
 
     async def update_student(self, student_id: int, student_data: dict):
 
