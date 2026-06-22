@@ -309,7 +309,10 @@ class TeacherService:
             {
                 **user.__dict__,
                 "dialects": user.dialect,
-                "country":user.countries.country_name
+                "country":{
+                    "country_code":user.countries.country_code,
+                    "country_name":user.countries.country_name
+                }
                 
             }
         )

@@ -18,7 +18,9 @@ class ResponseTokenModel(BaseModel):
     access_token: str
     refresh_token: str
 
-
+class CountryModel(BaseModel):
+    country_code: str
+    country_name: str
 class ResponseUserModel(BaseModel):
     id: uuid.UUID
     name: str
@@ -43,7 +45,7 @@ class ResponseDialectModel(BaseModel):
 class ResponseTeacherModel(ResponseUserModel):
     model_config = ConfigDict(from_attributes=True)
     rating:str | None
-
+    country:CountryModel
     dialects: list[ResponseDialectModel] | None
 
 

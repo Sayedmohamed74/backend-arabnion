@@ -14,7 +14,7 @@ ALGORITHM = os.environ.get("ALGORITHM")
 
 def create_access_token(data: dict):
     to_encode = data.copy()
-    to_encode.update({"exp": datetime.now(timezone.utc) + timedelta(minutes=15)})
+    to_encode.update({"exp": datetime.now(timezone.utc) + timedelta(minutes=45)})
 
     return jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
 
